@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Laporan Kokurikulum</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
+    <style>
+        /* 2. CSS - Gaya Visual */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f7f6;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        #report-content {
+            background: white;
+            width: 210mm; /* Saiz A4 */
+            min-height: 297mm;
+            padding: 20mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+        }
+
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #34495e; padding-bottom: 10px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; color: #34495e; }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        textarea { height: 150px; resize: none; }
+
+        button {
+            padding: 12px 25px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        button:hover { background-color: #219150; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        /* Loading Spinner */
+        #loading {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loading">⏳ Sedang menjana PDF...</div>
+
+    <div class="controls">
+        <button onclick="generatePDF()" id="btn-download">📥 Muat Turun PDF</button>
+    </div>
+
+    <div id="report-content">
+        <h1>LAPORAN AKTIVITI KOKURIKULUM</h1>
+        
+        <div class="form-group">
+            <label>Nama Program / Aktiviti:</label>
+            <input type="text" id="nama-program" placeholder="Contoh: Perkhemahan Perdana Unit Beruniform">
+        </div>
+
+        <div class="form-group">
+            <label>Tarikh:</label>
+            <input type="date" id="tarikh-program">
+        </div>
+
+        <div class="form-group">
+            <label>Tempat:</label>
+            <input type="text" id="tempat-program" placeholder="Contoh: Dataran Perhimpunan Sekolah">
+        </div>
+
+        <div class="form-group">
+            <label>Ringkasan Aktiviti & Pencapaian:</label>
+            <textarea id="ringkasan" placeholder="Ceritakan perjalanan aktiviti di sini..."></textarea>
+        </div>
+
+        <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+            <div style="text-align: center; width: 200px;">
+                <p>___________________</p>
+                <p>Disediakan oleh</p>
+            </div>
+            <div style="text-align: center; width: 200px;">
+                <p>___________________</p>
+                <p>Disahkan oleh</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 3. JavaScript - Logik Penjanaan PDF
+        async function generatePDF() {
+            const element = document.getElementById('report-content');
+            const loading = document.getElementById('loading');
+            const btnDownload = document.getElementById('btn-download');
+            const inputs = element.querySelectorAll('input, textarea');
+            
+            // 1. Papar loading & disable button
+            loading.style.display = 'flex';
+            btnDownload.disabled = true;
+
+            // 2. Trik Visual: Sync nilai input ke DOM & buang border
+            inputs.forEach(input => {
+                if (input.tagName === 'TEXTAREA') {
+                    input.innerHTML = input.value;
+                } else {
+                    input.setAttribute('value', input.value);
+                }
+                input.style.border = 'none';
+                input.style.padding = '0';
+                input.style.background = 'transparent';
+            });
+
+            // 3. Tetapan PDF
+            const namaFail = document.getElementById('nama-program').value || 'Laporan_Tanpa_Nama';
+            const opt = {
+                margin:       [15, 15, 15, 15],
+                filename:     'Laporan_' + namaFail.replace(/\s+/g, '_') + '.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    letterRendering: true,
+                    scrollY: 0
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all'] }
+            };
+
+            try {
+                // 4. Proses jana PDF
+                await html2pdf().set(opt).from(element).save();
+                alert("PDF berjaya dimuat turun!");
+            } catch (error) {
+                console.error("Gagal menjana PDF:", error);
+                alert("Gagal menjana PDF. Sila cuba lagi.");
+            } finally {
+                // 5. Kembalikan rupa asal borang
+                inputs.forEach(input => {
+                    input.style.border = '';
+                    input.style.padding = '10px';
+                    input.style.background = '';
+                });
+                loading.style.display = 'none';
+                btnDownload.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
